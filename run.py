@@ -5,11 +5,11 @@ import util
 import os
 
 # calibration 결과들을 저장할 폴더명
-cali_folder = 'use_origin_img5' 
+cali_folder = 'use_origin_img7' 
 # thermal board 데이터가 있는 폴더 명
-thermal_folder = '/media/daheeyoun/DAHEEUSB/rosbag_images/1/thermal'
+thermal_folder = '/media/daheeyoun/DAHEEUSB/rosbag_images/3/thermal'
 # rgb board 데이터가 있는 폴더 명
-rgb_folder =  '/media/daheeyoun/DAHEEUSB/rosbag_images/1/rgb'
+rgb_folder =  '/media/daheeyoun/DAHEEUSB/rosbag_images/3/rgb'
 # 캘리브레이션을 위해 임의로 선택할 파일의 갯수(5~60개가 적당)
 random_select = 50
 os.makedirs(cali_folder, exist_ok=True)
@@ -115,7 +115,7 @@ def validation_intrinsic_mtx(train_folder, val_folder) :
     val.residual_axis_RMSE(train_file, val_file)
  
 # 랜덤 이미지 셋을 선택하고 여기에 대해 intrinsic/extrinsic matrix 연산
-#get_calibration()
+get_calibration()
 
 # RGB에서 이상 이미지 제거 하고, 이에 대해 intrinsic/extrinsic matrix 재연산
 #get_calibration2()
@@ -130,5 +130,5 @@ rectification()
 file1 = 'use_origin_img'
 file2 = 'use_origin_img2'
 # 내부 행렬이 과적합 없이 잘 연산 되었는지 검증
-validation_intrinsic_mtx(file1, file2)
+#validation_intrinsic_mtx(file1, file2)
 

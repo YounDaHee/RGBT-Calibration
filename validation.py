@@ -39,6 +39,8 @@ def rectified_images(thermal_file, rgb_file, extrin_file, thermal_folder, rgb_fo
     rgb_data = np.load(rgb_file, allow_pickle=True)
     extrin_data = np.load(extrin_file, allow_pickle=True)
 
+    is_vertical = abs(extrin_data['T'][1, -1])>abs(extrin_data['T'][0,-1])
+
     keys = [k.split("_")[-1] for k in list(rgb_data['corner_storage'].item().keys())]
 
     #for key in keys[0] :
@@ -69,7 +71,7 @@ def rectified_images(thermal_file, rgb_file, extrin_file, thermal_folder, rgb_fo
         rgb_cam_mtx, rgb_data['distortion_coeffs'],
         img_dim, extrin_data['R'], extrin_data['T'],
         #flags=cv2.CALIB_ZERO_DISPARITY,
-        alpha=0.6
+        alpha=0.7
     )
 
     P1 = P1[:3, :3]
@@ -111,9 +113,9 @@ def rectified_images(thermal_file, rgb_file, extrin_file, thermal_folder, rgb_fo
                 thermal_data['camera_matrix'], thermal_data['distortion_coeffs'], 
                 R=R1, P=P1).reshape(-1,2)
 
-    util.draw_epipolar_lines(limg_rect, rimg_rect, L_u)
+    util.draw_epipolar_lines(limg_rect, rimg_rect, L_u, is_vertical)
 
-    x_rms = []
+    rms = []
     for k in keys:
         l_coner = thermal_data['corner_storage'].item()[f'thermal_{k}'].copy()
         r_coner = rgb_data['corner_storage'].item()[f'rgb_{k}'].copy()
@@ -126,9 +128,15 @@ def rectified_images(thermal_file, rgb_file, extrin_file, thermal_folder, rgb_fo
         R_u = cv2.undistortPoints(r_coner.reshape(-1,1,2), 
                                 rgb_cam_mtx, rgb_data['distortion_coeffs'], 
                                 R=R2, P=P2).reshape(-1,2)
-        x_rms.append(float(np.sqrt(((L_u[:,0]-R_u[:,0])**2).mean())))
+        if is_vertical :
+            rms.append(float(np.sqrt(((L_u[:,0]-R_u[:,0])**2).mean())))
+        else :
+            rms.append(float(np.sqrt(((L_u[:,1]-R_u[:,1])**2).mean())))
         
-    print(f"rectified x-RMS: {np.array(x_rms).mean():.3f} px")
+    if is_vertical : 
+        print(f"rectified x-RMS: {np.array(rms).mean():.3f} px")
+    else :
+        print(f"rectified y-RMS: {np.array(rms).mean():.3f} px")
 
 # intrinsic matrix가 과적합 되지 않았는지 여부 확인(다른 이미지 셋에 대해서 camera matrix 적용)
 def validation_with_other_img(val_file, test_file, interval = 100.0, pattern_size = (4, 6)):

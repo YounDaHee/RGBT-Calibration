@@ -95,14 +95,9 @@ def reprojection_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist) :
     return mean_error/len(objpoints)
 
 # 에피폴라 선 그려줌
-def draw_epipolar_lines(limg_rect, rimg_rect, coners):
+def draw_epipolar_lines(limg_rect, rimg_rect, coners, is_vertical):
     """
     두 rectified 이미지를 나란히 붙이고, 일정 간격으로 에피폴라 라인을 그림.
-    limg_rect: 좌측 이미지
-    rimg_rect: 우측 이미지
-    l_coner : 좌측 이미지의 코너 좌표
-    r_coner : 우측 이미지의 코너 좌표
-    num_lines: 그릴 라인 개수
     """
     # 색상을 BGR로 변환 (라인 색을 넣기 위해)
     if len(limg_rect.shape) == 2:
@@ -116,7 +111,10 @@ def draw_epipolar_lines(limg_rect, rimg_rect, coners):
         rimg_color = rimg_rect.copy()
 
     # 두 이미지를 가로로 붙임
-    combined = np.vstack((limg_color, rimg_color))
+    if is_vertical :
+        combined = np.vstack((limg_color, rimg_color))
+    else :
+        combined = np.vstack((limg_color, rimg_color))
     h, w, _ = combined.shape
 
     # 라인 색상 목록
@@ -130,8 +128,13 @@ def draw_epipolar_lines(limg_rect, rimg_rect, coners):
     ]
 
     # 일정 간격으로 y좌표 선택
-    for idx, x in enumerate(coners[:, 0]):
-        color = colors[idx // 4]
-        cv2.line(combined, (int(x), 0), (int(x), h), color, 1)
+    if is_vertical :
+        for idx, x in enumerate(coners[:, 0]):
+            color = colors[idx % 4]
+            cv2.line(combined, (int(x), 0), (int(x), h), color, 1)
+    else :
+        for idx, y in enumerate(coners[:, 1]):
+            color = colors[idx // 4]
+            cv2.line(combined, (int(y), 0), (int(y), w), color, 1)
 
-    cv2.imwrite('combine.jpg', combined)
+    cv2.imwrite('combine.png', combined)
