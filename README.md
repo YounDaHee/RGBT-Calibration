@@ -15,4 +15,5 @@ run.py 를 실행해서 캘리브레이션 코드를 실행할 수 있습니다.
 - 두 카메라의 이미지는 각각 'rgb_숫자.png', 'thermal_숫자.png' 형태도 저장되어야 정상적으로 인식 됩니다.
 
 정상적으로 측정된 캘리브레이션 데이터에 대해서 다음과 같은 combine.png 파일이 생성됩니다.
+
 <img width="320" height="480" alt="image" src="https://github.com/user-attachments/assets/8a10a905-91ef-40b8-b5f5-c3085eb06bd3" />
