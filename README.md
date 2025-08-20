@@ -3,6 +3,7 @@
 
 지름 2cm, 10cm 간격의 원형 패턴을 사용하는 캘리브레이션 보드를 탐지하기 위해 작성한 코드입니다.
 보드는 나무와 PLA+로 구성되며, PLA+ 재질의 원형 판을 차갑게 만든 뒤, 열을 가한 보드에 조립하는 방식으로 thermal에서의 측정이 이루어집니다.
+
 <img width="320" height="240" alt="rgb_00084" src="https://github.com/user-attachments/assets/a0055b33-a400-4f7a-ace4-ef43ac28bd6d" />
 <img width="320" height="240" alt="thermal_00058" src="https://github.com/user-attachments/assets/cd6f7ad2-53e8-45ad-bc1b-e6e7e50d4610" />
 
