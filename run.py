@@ -4,11 +4,13 @@ import validation as val
 import util
 import os
 
-cali_folder = 'use_origin_img5'
-thermal_folder = '/home/daheeyoun/CODE/komipo/Komipo_calibration_code3/do_undistortion/undist_img_thermal'
-rgb_folder = '/home/daheeyoun/CODE/komipo/Komipo_calibration_code3/do_undistortion/undist_img_rgb'
+# calibration 결과들을 저장할 폴더명
+cali_folder = 'use_origin_img5' 
+# thermal board 데이터가 있는 폴더 명
 thermal_folder = '/media/daheeyoun/DAHEEUSB/rosbag_images/1/thermal'
+# rgb board 데이터가 있는 폴더 명
 rgb_folder =  '/media/daheeyoun/DAHEEUSB/rosbag_images/1/rgb'
+# 캘리브레이션을 위해 임의로 선택할 파일의 갯수(5~60개가 적당)
 random_select = 50
 os.makedirs(cali_folder, exist_ok=True)
 
