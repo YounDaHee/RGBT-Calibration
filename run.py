@@ -4,12 +4,13 @@ import validation as val
 import util
 import os
 
+data_num = 2
 # calibration 결과들을 저장할 폴더명
-cali_folder = 'use_origin_img7' 
+cali_folder = f'result2__{data_num}' 
 # thermal board 데이터가 있는 폴더 명
-thermal_folder = '/media/daheeyoun/DAHEEUSB/rosbag_images/3/thermal'
+thermal_folder = f'/home/daheeyoun/CODE/komipo/rosbag_images/{data_num}/thermal'
 # rgb board 데이터가 있는 폴더 명
-rgb_folder =  '/media/daheeyoun/DAHEEUSB/rosbag_images/3/rgb'
+rgb_folder =  f'/home/daheeyoun/CODE/komipo/rosbag_images/{data_num}/rgb'
 # 캘리브레이션을 위해 임의로 선택할 파일의 갯수(5~60개가 적당)
 random_select = 50
 os.makedirs(cali_folder, exist_ok=True)
@@ -42,7 +43,7 @@ rgb_incal_conf = {
     'checked' : False,
     'area' : True,
     'minArea' : 500,
-    'maxArea' : 2000, 
+    'maxArea' : 20002.07, 
     'circulerity' : 0.8,
     'img_save' : False
 } 
@@ -115,20 +116,28 @@ def validation_intrinsic_mtx(train_folder, val_folder) :
     val.residual_axis_RMSE(train_file, val_file)
  
 # 랜덤 이미지 셋을 선택하고 여기에 대해 intrinsic/extrinsic matrix 연산
-get_calibration()
+# get_calibration()
 
-# RGB에서 이상 이미지 제거 하고, 이에 대해 intrinsic/extrinsic matrix 재연산
-#get_calibration2()
+# # RGB에서 이상 이미지 제거 하고, 이에 대해 intrinsic/extrinsic matrix 재연산
+# #get_calibration2()
 
-# reprojection error 출력
-reprojection_error()
+# # reprojection error 출력
+# reprojection_error()
 
-# rectification 연산
-# combine.jpg로 결과 이미지 저장
-rectification()
+# # rectification 연산
+# # combine.jpg로 결과 이미지 저장
+# rectification()
 
-file1 = 'use_origin_img'
-file2 = 'use_origin_img2'
+# file1 = 'use_origin_img'
+# file2 = 'use_origin_img2'
 # 내부 행렬이 과적합 없이 잘 연산 되었는지 검증
 #validation_intrinsic_mtx(file1, file2)
 
+
+# thermal_file = f'{cali_folder}/calibration_data_with_centers_thermal.npz'
+# rgb_file = f'{cali_folder}/calibration_data_with_centers_rgb.npz'
+# val.estimate_Homograpy(thermal_file, rgb_file, thermal_folder, rgb_folder) 
+
+train_folder = 'result1__3'
+val_folder = 'result1__3'
+val.triangulation(train_folder, val_folder)

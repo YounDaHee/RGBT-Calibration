@@ -98,8 +98,10 @@ class EX_CALIBRATION :
             matched_ids=matched_ids,
             mtx1 = mtx1,
             dist1 = dist1,
+            img_size1 = thermal_data['img_size'],
             mtx2 = mtx2,
-            dist2 = dist2
+            dist2 = dist2,
+            img_size2 = rgb_data['img_size']
         )
 
 

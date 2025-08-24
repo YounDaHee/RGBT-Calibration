@@ -90,12 +90,12 @@ def reprojection_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist) :
     mean_error = 0
     for i in range(len(objpoints)):
         imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
-        error = (cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2))**0.5
+        error = (cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2))
         mean_error += error
     return mean_error/len(objpoints)
 
 # 에피폴라 선 그려줌
-def draw_epipolar_lines(limg_rect, rimg_rect, coners, is_vertical):
+def draw_epipolar_lines(limg_rect, rimg_rect, coners, is_vertical, name):
     """
     두 rectified 이미지를 나란히 붙이고, 일정 간격으로 에피폴라 라인을 그림.
     """
@@ -137,4 +137,4 @@ def draw_epipolar_lines(limg_rect, rimg_rect, coners, is_vertical):
             color = colors[idx // 4]
             cv2.line(combined, (int(y), 0), (int(y), w), color, 1)
 
-    cv2.imwrite('combine.png', combined)
+    cv2.imwrite(name, combined)
