@@ -1,0 +1,25 @@
+
+{
+    "cali_folder": "example_calibration",
+    "thermal_folder": "example_data/example_thermal",
+    "rgb_folder": "example_data/example_rgb",
+    "grid": [4, 6],
+    "interval": 0.100, 
+    "thermal": {
+        "area": true,
+        "minArea": 200,
+        "maxArea": 4000,
+        "circulerity": 0.8,
+        "img_save": false
+    },
+    "rgb": {
+        "area": true,
+        "minArea": 1000,
+        "maxArea": 120000,
+        "circulerity": 0.8,
+        "img_save": false
+    },
+    "depth" : 2,
+    "rgb_path" : "example_data/example_rgb/2000000.png",
+    "th_path" : "example_data/example_thermal/2000000.png"
+}

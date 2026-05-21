@@ -3,18 +3,19 @@ import numpy as np
 import glob
 import os
 import util
-import validation as val
 
 class IN_CALIBRATION :
     
-    def __init__(self, conf):
+    def __init__(self, conf, unit=False):
         self.img_folder = conf['img_folder']
         self.pattern_size = conf['grid']
         self.interval = conf['interval']
         self.type = conf['img_type']
-        self.checked = conf['checked']
-        self.result_dir = conf['cali_folder'] 
+        self.result_dir = conf['cali_folder']
+        self.save_data_path = conf['file']
         self.img_save = conf['img_save']
+
+        self.unit = unit
 
         params = cv2.SimpleBlobDetector_Params()
 
@@ -33,6 +34,9 @@ class IN_CALIBRATION :
         else :
             # 원의 내부가 검은색이어야 함
             params.blobColor = 0
+            params.minThreshold = 10
+            params.maxThreshold = 100
+            params.thresholdStep = 5
 
         params.filterByConvexity = False
         params.filterByInertia = False
@@ -48,11 +52,11 @@ class IN_CALIBRATION :
             
     def refine_images(self, common_keys) :
         self.center_storage = {k:self.center_storage[k] 
-                                    for k in [self.type+"_"+ cname for cname in common_keys]}
+                                    for k in [cname for cname in common_keys]}
         
-        
-        output_dir = f'{self.result_dir}/selected_img_{self.type}'
-        os.makedirs(output_dir, exist_ok=True)
+        if self.img_save : 
+            output_dir = f'{self.result_dir}/selected_img_{self.type}'
+            os.makedirs(output_dir, exist_ok=True)
         for k in self.center_storage.keys() :
             img = cv2.imread(f'{self.img_folder}/{k}', cv2.IMREAD_GRAYSCALE)
 
@@ -63,8 +67,9 @@ class IN_CALIBRATION :
         
             cali_img = cv2.drawChessboardCorners(img_blob, self.pattern_size, self.center_storage[k], True)
             cali_img = util.draw_points_with_index(cali_img, self.center_storage[k])
-            save_name = os.path.join(output_dir, f"centers_{k}")
-            cv2.imwrite(save_name, cali_img)
+            if self.img_save : 
+                save_name = os.path.join(output_dir, f"centers_{k}")
+                cv2.imwrite(save_name, cali_img)
         
 
     def find_valid_img(self, THERMAL = None) :
@@ -75,23 +80,19 @@ class IN_CALIBRATION :
         self.center_storage = {}
         self.img_shape = None
 
-        if 'rgb' == self.type :
-            if not self.checked and THERMAL != None:
+        if 'rgb' == self.type and self.unit == False:
+            if THERMAL != None:
                 # thermal 상에서 인식한 이미지에 대해서만 연산
                 proved_image = THERMAL.center_storage.keys()
-            else :
-                # 가끔 RGB 이미지에서 이미지가 잘리거나, 노이즈가 생기는 경우가 있음
-                # 수동으로 해당 이미지를 지우고 실행
-                proved_image = glob.glob(f'{self.result_dir}/selected_img_{self.type}/*.png')
-
+            
             image_paths = []
             for detected_image in proved_image :
-                image_paths += glob.glob(f'{self.img_folder}/*_{detected_image.split("_")[-1]}') 
+                image_paths += glob.glob(f'{self.img_folder}/{detected_image}') 
         else :   
             image_paths = glob.glob(f'{self.img_folder}/*.png')
 
         if self.img_save :
-            output_dir = f'{self.result_dir}/output_centers_{self.type}'
+            output_dir = f'{self.result_dir}/valid_img_{self.type}'
             os.makedirs(output_dir, exist_ok=True)
 
         print(f"[INFO] Found {len(image_paths)} images.")
@@ -112,9 +113,9 @@ class IN_CALIBRATION :
             )
 
             if ret:
-                if not util.legal_calibration(self.pattern_size, center) :
-                    print(f"[WARN] The calibration results are not valid in {os.path.basename(fname)}")
-                    continue
+                # if not util.legal_calibration(self.pattern_size, center) :
+                #     print(f"[WARN] The calibration results are not valid in {os.path.basename(fname)}")
+                #     continue
                 
                 image_name = os.path.basename(fname)
                
@@ -146,20 +147,17 @@ class IN_CALIBRATION :
 
         objpoints = [objp for i in range(len(self.center_storage))]
         
-        # 종료 조건 튜플: (type, maxCount, epsilon)
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
-
         imgpoints = list(self.center_storage.values())
+            
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
 
         # Calibrate
         ret, self.mtx, self.dist, rvecs, tvecs = cv2.calibrateCamera(
-            objpoints, imgpoints, self.img_shape, None, None,#, criteria=criteria 
-        )
+            objpoints, imgpoints, self.img_shape, None, None, criteria=criteria 
+        ) 
 
-        # Save everything
-        save_data_path = f'{self.result_dir}/calibration_data_with_centers_{self.type}.npz'
         np.savez(
-            save_data_path,
+            self.save_data_path,
             camera_matrix=self.mtx,
             distortion_coeffs=self.dist,
             rvecs=rvecs,
@@ -169,4 +167,4 @@ class IN_CALIBRATION :
             reproj_error = util.reprojection_error(objpoints, imgpoints, rvecs, tvecs, self.mtx, self.dist)
         )
 
-        print(f"\n[INFO] Calibration data saved to:\n{save_data_path}")
+        print(f"\n[INFO] Calibration data saved to:\n{self.save_data_path}")

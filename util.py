@@ -10,17 +10,20 @@ def gamma_correction(img, gamma=1.5):
     return cv2.LUT(img, table)
 
 def preprocessing(img) :
-    img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
-    clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(1, 1))
-    img = clahe.apply(img)
-    img = gamma_correction(img, gamma=1.6)
-    img = cv2.bilateralFilter(img, d=5, sigmaColor=30, sigmaSpace=75)
-    return img    
+    img_norm = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+    img_norm = img_norm.astype(np.uint8)
+
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    img_eq = clahe.apply(img_norm)
+
+    img_blur = cv2.GaussianBlur(img_eq, (5, 5), 0)
+
+    return img_blur
 
 # 캘리브레이션 시, 노이즈에 의해 grid_point가 기준점에서 너무 벋어났는지 여부 확인
 # 기울기 tolerence = 0.2, -20 degree ~ + 20 degree 오차 허용
 def legal_calibration(pattern_size, center, t = 0.2, e = 0.1e-05) :
-    center = center.reshape(24, 2)
+    center = center.reshape(2, pattern_size[0]*pattern_size[1])
     for col in range(0, pattern_size[1]) :
         diff = None
         for row in range(1, pattern_size[0]) :
@@ -31,26 +34,30 @@ def legal_calibration(pattern_size, center, t = 0.2, e = 0.1e-05) :
                     return False
             diff = diff_x/diff_y
 
-    # for row in range(0, pattern_size[0]) :
-    #     diff = None
-    #     for col in range(1, pattern_size[1]) :
-    #         diff_x = center[row+col*pattern_size[0]][0] - center[row+(col-1)*pattern_size[0]][0]
-    #         diff_y = center[row+col*pattern_size[0]][1] - center[row+(col-1)*pattern_size[0]][1]
-    #         if(diff is not None) :
-    #             if(diff != diff_x//diff_y) :
-    #                 print(f'{row+col*pattern_size[0]}, {row+(col-1)*pattern_size[0]}')
-    #                 print(row)
-    #                 return False
-    #         diff = diff_x//diff_y
+    for row in range(0, pattern_size[0]) :
+        diff = None
+        for col in range(1, pattern_size[1]) :
+            diff_x = center[row+col*pattern_size[0]][0] - center[row+(col-1)*pattern_size[0]][0]
+            diff_y = center[row+col*pattern_size[0]][1] - center[row+(col-1)*pattern_size[0]][1]
+            if(diff is not None) :
+                if((diff < (diff_x/(diff_y) - t)) or (diff > (diff_x/(diff_y) + t))) :
+                    return False
+            diff = diff_x/diff_y
 
     return True
 
 # 동일하게 감지하는 이미지 셋을 찾고 그 중 50개를 랜덤으로 선택
-def common_image(A, B, k = 50) :
+def common_image(A, B=None, k = 50) :
     a_img = {fname.split("_")[-1] for fname in A.center_storage.keys()}
-    b_img = {fname.split("_")[-1] for fname in B.center_storage.keys()}
+
+    if(B!=None) :
+        b_img = {fname.split("_")[-1] for fname in B.center_storage.keys()}
     
-    common_all = list(a_img & b_img)
+    if B == None : 
+        common_all = a_img
+    else :
+        common_all = list(a_img & b_img)
+
     assert len(common_all)>0, "[ERROR] No Common Image"
     if k>0 :
         return random.sample(common_all, k=min(k, len(common_all)))

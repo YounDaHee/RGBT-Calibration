@@ -7,43 +7,72 @@ class EX_CALIBRATION :
     def __init__(self, conf) :
         self.pattern_size = conf['grid']
         self.interval = conf['interval']
-
+        self.save_data_path = conf['file']
         self.thermal_file = conf['thermal_file']
         self.rgb_file = conf['rgb_file']
         self.result_folder = conf['cali_folder']
-        
-    def __call__(self) :
-        thermal_data = np.load(self.thermal_file, allow_pickle=True)
-        rgb_data = np.load(self.rgb_file, allow_pickle=True)
+
+    def _load_intrinsic_data(self, npz_file):
+        if npz_file is None:
+            raise ValueError("npz file must be provided for extrinsic calibration.")
+
+        data = np.load(npz_file, allow_pickle=True)
+        return {
+            'img_size': tuple(data['img_size']),
+            'camera_matrix': data['camera_matrix'],
+            'distortion_coeffs': data['distortion_coeffs']
+        }
+
+    def _load_point_data(self, calibration_obj):
+        return {
+            'img_size': calibration_obj.img_shape,
+            'corner_storage': calibration_obj.center_storage,
+        }
+
+    def __call__(self, 
+                 thermal_calibration, rgb_calibration,
+                 mtx_thermal=None, dist_thermal=None,
+                 mtx_rgb=None, dist_rgb=None) :
+        thermal_intrinsic = self._load_intrinsic_data(self.thermal_file)
+        rgb_intrinsic = self._load_intrinsic_data(self.rgb_file)
+        thermal_data = self._load_point_data(thermal_calibration)
+        rgb_data = self._load_point_data(rgb_calibration)
 
         # 해상도가 다른 두 이미지를 스케일링 하기 위해 사용
         th_w, th_h = thermal_data['img_size']
         rgb_w, rgb_h = rgb_data['img_size']
 
+        scale_x = 1.0
+        scale_y = 1.0
         if(th_w!=rgb_w) :
             scale_x = th_w / rgb_w
             scale_y = th_h / rgb_h
-        
-        mtx_thermal = thermal_data['camera_matrix']
-        dist_thermal = thermal_data['distortion_coeffs']
 
-        mtx_rgb = rgb_data['camera_matrix']
+        if(mtx_thermal is None) : mtx_thermal = thermal_intrinsic['camera_matrix']
+        if(dist_thermal is None) : dist_thermal = thermal_intrinsic['distortion_coeffs']
+        if(mtx_rgb is None) : mtx_rgb = rgb_intrinsic['camera_matrix']
+        if(dist_rgb is None) : dist_rgb = rgb_intrinsic['distortion_coeffs']
+
+        mtx_thermal = np.array(mtx_thermal, copy=True)
+        dist_thermal = np.array(dist_thermal, copy=True)
+        mtx_rgb = np.array(mtx_rgb, copy=True)
+        dist_rgb = np.array(dist_rgb, copy=True)
+        
         if(th_w!=rgb_w) :
             mtx_rgb[0, 0] *= scale_x  # fx
             mtx_rgb[0, 2] *= scale_x  # cx
             mtx_rgb[1, 1] *= scale_y  # fy
             mtx_rgb[1, 2] *= scale_y  # cy
-        dist_rgb = rgb_data['distortion_coeffs']
 
-        thermal_img = {fname.split("_")[-1] for fname in thermal_data['corner_storage'].item().keys()}
-        rgb_img = {fname.split("_")[-1] for fname in rgb_data['corner_storage'].item().keys()}
+        thermal_img = {fname for fname in thermal_data['corner_storage'].keys()}
+        rgb_img = {fname for fname in rgb_data['corner_storage'].keys()}
 
         common_keys = thermal_img & rgb_img
 
-        thermal_imgpoints_dict = {k:thermal_data['corner_storage'].item()[k] 
-                                    for k in ['thermal_' + cname for cname in common_keys]}
-        rgb_imgpoints_dict = {k:rgb_data['corner_storage'].item()[k] 
-                                    for k in ['rgb_' + cname for cname in common_keys]}
+        thermal_imgpoints_dict = {k:thermal_data['corner_storage'][k]
+                                    for k in [cname for cname in common_keys]}
+        rgb_imgpoints_dict = {k:rgb_data['corner_storage'][k]
+                                    for k in [cname for cname in common_keys]}
         
         def get_frame_id(fname):
             name, _ = os.path.splitext(fname)
@@ -83,25 +112,25 @@ class EX_CALIBRATION :
 
         ret, mtx1, dist1, mtx2, dist2, R, T, E, F = cv2.stereoCalibrate(
             objpoints,
-            imgpoints_thermal, imgpoints_rgb,
-            mtx_thermal, dist_thermal,
+            imgpoints_rgb, imgpoints_thermal, 
             mtx_rgb, dist_rgb,
+            mtx_thermal, dist_thermal,
             thermal_data['img_size'],
-            #criteria=criteria,
+            criteria=criteria,
             flags=flags
         )
 
         np.savez(
-            f"{self.result_folder}/thermal_rgb_extrinsics.npz",
+            self.save_data_path,
             R=R, T=T, E=E, F=F,
             reproj_error=ret,
             matched_ids=matched_ids,
-            mtx1 = mtx1,
-            dist1 = dist1,
-            img_size1 = thermal_data['img_size'],
-            mtx2 = mtx2,
-            dist2 = dist2,
-            img_size2 = rgb_data['img_size']
+            mtx1 = mtx_rgb,
+            dist1 = dist_rgb,
+            img_size1 = rgb_data['img_size'],
+            mtx2 = mtx_thermal,
+            dist2 = dist_thermal,
+            img_size2 = thermal_data['img_size']
         )
 
-
+        print(f"\n[INFO] Calibration data saved to:\n{self.save_data_path}")
