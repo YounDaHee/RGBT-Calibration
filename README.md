@@ -32,6 +32,15 @@ These approaches improve circle detection performance in thermal images.
 
 <img width="911" height="1362" alt="image" src="https://github.com/user-attachments/assets/30cb3523-1165-4bcd-b77e-8d5f2fb41c05" />
 
+# Requirement
+It was written based on Python 3.
+
+- numpy
+- cv2
+- json
+- pathlib
+- argparse
+  
 # Project Execution
 
 Run the calibration pipeline using:
