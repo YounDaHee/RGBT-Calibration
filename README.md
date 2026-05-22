@@ -1,51 +1,134 @@
 # RGB-T-Calibration
-성균관대학교 RISE 랩실_RGB-T Calibration 과정
+RGB-T Calibration process from the RISE Laboratory at Sungkyunkwan University
 
-지름 2cm, 10cm 간격의 원형 패턴을 사용하는 캘리브레이션 보드를 탐지하기 위해 작성한 코드입니다.
-캘리브레이션 보드는 나무와 PLA+로 구성되어 있습니다.
-1. PLA+ 재질의 원형 판을 차갑게 만든 뒤 조립
-2. 햇빛이나 난로를 통해 보드의 열을 고루 뎁힌 뒤 분리한 원형 판을 조립
-두가지 방식을 이용하여 열 분포를 다르게 하여 캘리브레이션을 수행할 수 있습니다.
+This project provides a calibration pipeline between RGB and Thermal cameras using a circular calibration board pattern.
 
-<img width="320" height="240" alt="rgb_00084" src="https://github.com/user-attachments/assets/a0055b33-a400-4f7a-ace4-ef43ac28bd6d" />
-<img width="320" height="240" alt="thermal_00058" src="https://github.com/user-attachments/assets/cd6f7ad2-53e8-45ad-bc1b-e6e7e50d4610" />
+The calibration board uses:
 
-run.py 를 실행해서 캘리브레이션 코드를 실행할 수 있습니다.
-해당 코드의 다양한 기능들은 run.py의 함수를 통해 사용할 수 있습니다.
+2 cm diameter circles
+10 cm spacing between circles
 
-- 이 코드는 두 카메라의 같은 시점의 이미지가 같은 파일명(숫자)를 가지고 있다는 걸 전재로 합니다.
-- 두 카메라의 이미지는 '숫자.png' 형태도 저장되어야 정상적으로 인식 됩니다.
+The board is designed to generate thermal contrast for stable detection in thermal images.
 
-config.json 폴더의 내용을 수정하여 횐경에 맞는 파라미터를 설정할 수 있습니다.
+# Calibration Board Construction
+
+The calibration board consists of:
+
+- Wooden base plate
+- PLA+ circular plates
+
+Two methods can be used to generate thermal contrast.
+
+1. Cooling Method : 
+   Cool down the PLA+ circular plates
+   Assemble them onto the board
+   Detect temperature differences from the background
+2. Heating Method : 
+   Heat the board uniformly using sunlight or a heater
+   Reassemble the separated PLA+ circles
+   Use thermal contrast for circle detection
+
+These approaches improve circle detection performance in thermal images.
+
+<img width="911" height="1362" alt="image" src="https://github.com/user-attachments/assets/30cb3523-1165-4bcd-b77e-8d5f2fb41c05" />
+
+# Project Execution
+
+Run the calibration pipeline using:
+```
+python3 run.py --config config.json --mode all
+```
+
+# Important Notes
+- RGB and Thermal images must be captured at the same timestamp.
+- Image filenames from both cameras must match.
+  
 ```
 {
-   # 결과가 저장될 폴더 위치
+    // Directory where calibration results will be saved
     "cali_folder": "example_calibration",
-   # 온도 카메라에서 인식한 보드의 이미지가 저장된 폴더 위치
+
+    // Directory containing detected board images from the thermal camera
     "thermal_folder": "example_data/example_thermal",
-   # 
+
+    // Directory containing detected board images from the RGB camera
     "rgb_folder": "example_data/example_rgb",
+
+    // Calibration board pattern size [rows, columns]
     "grid": [4, 6],
-    "interval": 0.100, 
+
+    // Distance between adjacent circles on the board (meter unit)
+    "interval": 0.100,
+
     "thermal": {
+        // Enable area-based blob filtering
         "area": true,
+
+        // Minimum blob area for thermal image detection
         "minArea": 200,
+
+        // Maximum blob area for thermal image detection
         "maxArea": 4000,
+
+        // Minimum circularity threshold for blob detection
         "circulerity": 0.8,
+
+        // Save intermediate detection result images
         "img_save": false
     },
+
     "rgb": {
+        // Enable area-based blob filtering
         "area": true,
+
+        // Minimum blob area for RGB image detection
         "minArea": 1000,
+
+        // Maximum blob area for RGB image detection
         "maxArea": 120000,
+
+        // Minimum circularity threshold for blob detection
         "circulerity": 0.8,
+
+        // Save intermediate detection result images
         "img_save": false
     },
-    "depth" : 2,
-    "rgb_path" : "example_data/example_rgb/2000000.png",
-    "th_path" : "example_data/example_thermal/2000000.png"
+
+    // Reference depth value used for final calibration validation
+    "depth": 2,
+
+    // RGB image path used for validation
+    "rgb_path": "example_data/example_rgb/2000000.png",
+
+    // Thermal image path used for validation
+    "th_path": "example_data/example_thermal/2000000.png"
 }
 ```
 
-테스트 수행을 위해 실험실 환경에서 촬영한 보드 데이터를 정리하였습니다.
+# Output files
+Calibration results are stored as .npz files.
 
+1. Intrinsic Calibration Result
+ 
+  ```
+ `camera_matrix`      Camera intrinsic matrix      
+ `distortion_coeffs`  Lens distortion coefficients 
+ `rvecs`              Rotation vectors             
+ `tvecs`              Translation vectors          
+ `corner_storage`     Detected circle centers      
+ `img_size`           Image resolution            
+ `reproj_error`       Mean reprojection error      
+
+  ```
+  
+2. Extrinsic Calibration Result
+   
+  ```
+ `R`             Rotation matrix between RGB and Thermal cameras    
+ `T`             Translation vector between RGB and Thermal cameras 
+ `E`             Essential matrix                                   
+ `F`             Fundamental matrix                                 
+ `reproj_error`  Stereo calibration reprojection error              
+ `matched_ids`   Matched image IDs                                  
+
+  ```
